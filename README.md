@@ -1,6 +1,6 @@
 # ADK 101 Training - 30min
 
-This README provides a quick start guide to using the Agent Development Kit (ADK) based on the "ADK_Training_30min.ipynb" notebook.
+This README provides a quick start guide to using the Agent Development Kit (ADK) based on the "ADK_Training_30min.ipynb" notebook. It also includes information on integrating external tools using the "Toolbox_in_Agent_ADK.ipynb" notebook.
 
 ## Prerequisites
 
@@ -260,6 +260,115 @@ The notebook demonstrates training and usage of different agents. Here's a break
     )
     ```
 
+## Integrating External Tools with Toolbox
+
+This section explains how to integrate external tools into your ADK agents using the GenAI Toolbox.
+
+### Prerequisites
+
+-   A deployed GenAI Toolbox instance.  See [GenAI Toolbox for AlloyDB](https://codelabs.developers.google.com/genai-toolbox-for-alloydb) for instructions on how to build and deploy your own toolbox.
+
+### Configuration
+
+1.  **Install `toolbox_langchain`:**
+
+    ```bash
+    !pip install toolbox_langchain
+    ```
+
+2.  **Declare Toolbox Tool:**
+
+    ```python
+    from agents.tools.toolbox_tool import ToolboxTool
+    import toolbox_langchain
+    import asyncio
+
+    toolbox_tools = ToolboxTool("https://toolbox-uxu5wi2jpa-uc.a.run.app") # Replace with your toolbox URL
+
+    # Load the tool separately
+    loop = asyncio.get_event_loop()
+    get_toy_price_tool = toolbox_tools.toolbox_client.load_tool("get-toy-price")
+
+    # Wrap the toolbox tool with a function
+    def get_toy_price_function(description: str):
+      """Gets the price of a toy."""
+      tool_input = {"description": description}
+
+      # Pass the tool_input to the get_toy_price_tool
+      return get_toy_price_tool(tool_input=tool_input)
+    ```
+
+3.  **Instantiate Root Agent:**
+
+    -   Include the `get_toy_price_function` in the agent's `tools` list.
+
+    ```python
+    from agents import Agent
+    from google.genai import types
+
+    AGENT_NAME = "puppy_agent"
+    MODEL_NAME = "gemini-2.0-flash-001" # Or your preferred Gemini model
+    root_agent = Agent(
+        model=MODEL_NAME,
+        name=AGENT_NAME,
+        description="Agent that responsds like a puppy.",
+        instruction="Assume you are a golden retriever puppy that is 6months old. From your understanding of the world and using the tool mentioned, answer human questions. But for every message of yours, end it with a line that you are LEO the golden puppy.",
+        generate_content_config=types.GenerateContentConfig(temperature=0.2),
+        tools=[
+         #toolbox_tools.get_tool(tool_name='get-toy-price')
+          get_toy_price_function
+        ],
+    )
+    ```
+
+4.  **Set up Session and Runner:**
+
+    ```python
+    from agents.artifacts import InMemoryArtifactService
+    from agents.sessions import InMemorySessionService
+    from agents.runners import Runner
+
+    session_service = InMemorySessionService()
+    artifact_service = InMemoryArtifactService()
+
+    APP_NAME = "pupple_agent_app" # Or your preferred app name
+    USER_ID = "user123" # Or identify your user
+
+    session = session_service.create(app_name=APP_NAME, user_id=USER_ID)
+
+    runner = Runner(
+        agent=root_agent,
+        app_name=APP_NAME,
+        artifact_service=artifact_service,
+        session_service=session_service,
+    )
+
+    class AgentInteractor: # Helper class for easy interaction
+        def __init__(self, session, runner):
+            self.session = session
+            self.runner = runner
+
+        def ask_agent(self, query: str) -> str:
+            content = types.Content(role='user', parts=[types.Part(text=query)])
+            events = self.runner.run(session=self.session, new_message=content)
+            for event in events:
+                if event.is_final_response():
+                    final_response = event.content.parts[0].text
+                    print("Agent Response: ", final_response)
+            return None
+
+    hello_world_agent = AgentInteractor(session, runner)
+    ```
+
+5.  **Interact with the Agent:**
+
+    ```python
+    import warnings
+    warnings.filterwarnings('ignore')
+
+    hello_world_agent.ask_agent(query="Looks like you are good with toys. Tell the price of a fish toy")
+    ```
+
 ## Running the Agents
 
 -   The notebook provides example code for running each agent and interacting with them.
@@ -269,3 +378,4 @@ The notebook demonstrates training and usage of different agents. Here's a break
 
 -   [Agent Development Kit (ADK) Documentation](https://cloud.google.com/agent-development-kit)
 -   [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
+-   [GenAI Toolbox for AlloyDB](https://codelabs.developers.google.com/genai-toolbox-for-alloydb)
