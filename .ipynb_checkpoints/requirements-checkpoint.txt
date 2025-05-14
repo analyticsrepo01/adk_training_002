@@ -1,0 +1,8 @@
+google-adk
+google-genai
+pydantic
+google-cloud-aiplatform
+google-cloud-storage
+gitpython
+pydantic
+langchain

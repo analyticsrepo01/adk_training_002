@@ -4,6 +4,7 @@ This README provides a quick start guide to using the Agent Development Kit (ADK
 
 ## Prerequisites
 
+
 -   A Google Cloud project with the Vertex AI API enabled.
 -   `gcloud` CLI installed and configured.
 -   Python 3.10 or higher.
@@ -12,6 +13,8 @@ This README provides a quick start guide to using the Agent Development Kit (ADK
 ## Setup
 
 1.  **Environment Variables:**
+
+    - pip install -r requirements.txt
 
     -   Set the `PROJECT_ID` and `LOCATION` environment variables. Replace `"my-project-0004-346516"` with your Google Cloud project ID and `"us-central1"` with your desired location.
 
