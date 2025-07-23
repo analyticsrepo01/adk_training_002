@@ -66,6 +66,8 @@ remote_app = agent_engines.create(
     extra_packages=[
         "./rag",
     ],
+    display_name="rag_bot",
+    description="Agent Engine that uses ADK",     
 )
 
 # log remote_app
